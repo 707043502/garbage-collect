@@ -21,9 +21,13 @@ array, then arraySize contains its size */
     PtrDetails(T* ptr, int size)
     {
         // TODO: Implement PtrDetails
+        
         memPtr = ptr;
         if (size > 0){
             isArray = true;
+            arraySize = size;
+        }else{
+            isArray = false;
             arraySize = size;
         }
         refcount = 1;

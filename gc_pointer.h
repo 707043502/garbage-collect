@@ -102,6 +102,7 @@ bool Pointer<T, size>::first = true;
 template<class T,int size>
 Pointer<T,size>::Pointer(T *t){
     // Register shutdown() as an exit function.
+
     if (first)
         atexit(shutdown);
     first = false;
@@ -115,10 +116,10 @@ Pointer<T,size>::Pointer(T *t){
     auto ref = findPtrInfo(t);
 
     if (ref == refContainer.end()){
-        PtrDetails<T> ptrD(t, size);
-        refContainer.push_back(ptrD)
+        PtrDetails<T> ptrD(t, arraySize);
+        refContainer.push_back(ptrD);
     }else{
-        ref->refCount += 1;
+        ref->refcount += 1;
     }
     // Lab: Smart Pointer Project Lab
 
@@ -132,10 +133,10 @@ Pointer<T,size>::Pointer(const Pointer &ob){
     addr = ob.addr;
     arraySize = size;
     if (size > 0){
-        isArray == true;
+        isArray = true;
     }
     auto ref = findPtrInfo(ob.addr);
-    ref->refCount = ref->refCount + 1;
+    ref->refcount = ref->refcount + 1;
 
 }
 
@@ -147,7 +148,7 @@ Pointer<T, size>::~Pointer(){
     // Lab: New and Delete Project Lab
     auto ref = findPtrInfo(addr);
 
-    if (ref) ref->refCount = ref->refCount - 1;
+    if (ref!=refContainer.end()) ref->refcount = ref->refcount - 1;
 
     collect();
 }
@@ -175,6 +176,7 @@ bool Pointer<T, size>::collect(){
             // Free memory unless the Pointer is null.
             if (p->memPtr){
                 if (p->isArray){
+              
                     delete[] p->memPtr; // delete array
                 }
                 else{
@@ -191,27 +193,25 @@ bool Pointer<T, size>::collect(){
 // Overload assignment of pointer to Pointer.
 template <class T, int size>
 T *Pointer<T, size>::operator=(T *t){
-
     // TODO: Implement operator==
     // LAB: Smart Pointer Project Lab
     if (t==addr) return addr;
-
-    auto ref = findPtrInfo(addr);
-    ref->refCount -= 1;
+    
 
     auto refNew = findPtrInfo(t);
     if (refNew != refContainer.end()){
-        refNew->refCount += 1;
+        refNew->refcount += 1;
     }else{
         PtrDetails<T> ptrD(t, size);
         refContainer.push_back(ptrD);
     }
+    return addr;
 
 }
 // Overload assignment of Pointer to Pointer.
 template <class T, int size>
 Pointer<T, size> &Pointer<T, size>::operator=(Pointer &rv){
-
+    
     // TODO: Implement operator==
     // LAB: Smart Pointer Project Lab
     addr = rv.addr;
@@ -219,7 +219,7 @@ Pointer<T, size> &Pointer<T, size>::operator=(Pointer &rv){
     arraySize = rv.arraySize;
 
     auto ref = findPtrInfo(addr);
-    ref->refCount += 1;
+    ref->refcount += 1;
 }
 
 // A utility function that displays refContainer.
