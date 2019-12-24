@@ -39,7 +39,7 @@ public:
     // NOTE: templates aren't able to have prototypes with default arguments
     // this is why constructor is designed like this:
     Pointer(){
-        Pointer(NULL);
+        Pointer(NULL); 
     }
     Pointer(T*);
     // Copy constructor.
@@ -106,7 +106,20 @@ Pointer<T,size>::Pointer(T *t){
         atexit(shutdown);
     first = false;
 
-    // TODO: Implement Pointer constructor
+    addr = t;
+    arraySize = size;
+    if (size > 0){
+        isArray = true;
+    }
+
+    auto ref = findPtrInfo(t);
+
+    if (ref == refContainer.end()){
+        PtrDetails<T> ptrD(t, size);
+        refContainer.push_back(ptrD)
+    }else{
+        ref->refCount += 1;
+    }
     // Lab: Smart Pointer Project Lab
 
 }
@@ -116,6 +129,13 @@ Pointer<T,size>::Pointer(const Pointer &ob){
 
     // TODO: Implement Pointer constructor
     // Lab: Smart Pointer Project Lab
+    addr = ob.addr;
+    arraySize = size;
+    if (size > 0){
+        isArray == true;
+    }
+    auto ref = findPtrInfo(ob.addr);
+    ref->refCount = ref->refCount + 1;
 
 }
 
@@ -125,6 +145,11 @@ Pointer<T, size>::~Pointer(){
 
     // TODO: Implement Pointer destructor
     // Lab: New and Delete Project Lab
+    auto ref = findPtrInfo(addr);
+
+    if (ref) ref->refCount = ref->refCount - 1;
+
+    collect();
 }
 
 // Collect garbage. Returns true if at least
@@ -135,7 +160,32 @@ bool Pointer<T, size>::collect(){
     // TODO: Implement collect function
     // LAB: New and Delete Project Lab
     // Note: collect() will be called in the destructor
-    return false;
+    bool memfreed = false;
+    typename std::list<PtrDetails<T> >::iterator p;
+    do{
+        // Scan refContainer looking for unreferenced pointers.
+        for (p = refContainer.begin(); p != refContainer.end(); p++){
+            // If in-use, skip.
+            if (p->refcount > 0)
+                continue;
+            memfreed = true;
+            // Remove unused entry from refContainer.
+            refContainer.remove(*p);
+
+            // Free memory unless the Pointer is null.
+            if (p->memPtr){
+                if (p->isArray){
+                    delete[] p->memPtr; // delete array
+                }
+                else{
+                    delete p->memPtr; // delete single element
+                }
+            }
+            // Restart the search.
+            break;
+        }
+    } while (p != refContainer.end());
+    return memfreed;
 }
 
 // Overload assignment of pointer to Pointer.
@@ -144,6 +194,18 @@ T *Pointer<T, size>::operator=(T *t){
 
     // TODO: Implement operator==
     // LAB: Smart Pointer Project Lab
+    if (t==addr) return addr;
+
+    auto ref = findPtrInfo(addr);
+    ref->refCount -= 1;
+
+    auto refNew = findPtrInfo(t);
+    if (refNew != refContainer.end()){
+        refNew->refCount += 1;
+    }else{
+        PtrDetails<T> ptrD(t, size);
+        refContainer.push_back(ptrD);
+    }
 
 }
 // Overload assignment of Pointer to Pointer.
@@ -152,7 +214,12 @@ Pointer<T, size> &Pointer<T, size>::operator=(Pointer &rv){
 
     // TODO: Implement operator==
     // LAB: Smart Pointer Project Lab
+    addr = rv.addr;
+    isArray = rv.isArray;
+    arraySize = rv.arraySize;
 
+    auto ref = findPtrInfo(addr);
+    ref->refCount += 1;
 }
 
 // A utility function that displays refContainer.
